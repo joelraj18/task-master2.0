@@ -4,19 +4,23 @@
 
 /**
  * ============================================
- * TaskMaster App - Violet & Cyan Theme Styles
+ * TaskMaster App - Violet Theme Styles
  * ============================================
  */
 
 /* 1. Root Variables & Global Definitions */
 :root {
-    /* Updated Color Palette */
-    --color-primary: #7c3aed;    /* Violet 600 - Primary Action Color */
-    --color-secondary: #06b6d4;  /* Cyan 500 - Secondary/Highlight Color */
-    --color-background: #f8fafc; /* Slate 50 - Light Background */
-    --color-text-dark: #1e293b;  /* Slate 800 - Main Text Color */
-    --color-card-bg: #ffffff;
-    --color-danger: #ef4444;     /* Red 500 */
+    /* Updated Color Palette - Violet/Purple Theme */
+    --color-primary: #7c3aed;       /* Violet 600 - Primary Action Color */
+    --color-primary-dark: #6d28d9;  /* Violet 700 - Hover states */
+    --color-primary-light: #8b5cf6; /* Violet 500 - Lighter variant */
+    --color-secondary: #a78bfa;     /* Violet 400 - Secondary/Highlight Color */
+    --color-background: black;    /* Violet 50 - Light Background */
+    --color-background-card: #ffffff;
+    --color-text-dark: #1e1b4b;     /* Indigo 950 - Main Text Color */
+    --color-text-light: #6b7280;    /* Gray 500 - Secondary text */
+    --color-danger: #ef4444;        /* Red 500 */
+    --color-success: #10b981;       /* Emerald 500 */
 }
 
 body {
@@ -26,7 +30,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: var(--color-text-dark); /* Apply theme text color globally */
+  color: var(--color-text-dark);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 code {
@@ -43,24 +48,24 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* 3. Custom Scrollbar Styling (For Activity Feed) */
+/* 3. Custom Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9; /* Slate 100 */
+    background: #ede9fe; /* Violet 100 */
     border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #cbd5e1; /* Slate 300 */
+    background: #c4b5fd; /* Violet 300 */
     border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8; /* Slate 400 */
+    background: #a78bfa; /* Violet 400 */
 }
 
 /* 4. Animations */
@@ -76,7 +81,7 @@ textarea:focus-visible {
 
 .animate-in {
     animation-duration: 0.5s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* ease-in-out */
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-in {
@@ -124,5 +129,5 @@ textarea:focus-visible {
 
 .recharts-tooltip-label {
     font-weight: 700;
-    color: #334155; /* Slate 700 */
+    color: #334155;
 }
