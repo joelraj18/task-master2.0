@@ -209,6 +209,7 @@ const KnowledgeTestScreen = ({ onBack }) => {
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
+            delimiter: '|',
             complete: function(results) {
                 const parsedQuestions = results.data.map(row => ({
                     question: row.Question || row.question || '',
@@ -250,6 +251,7 @@ const KnowledgeTestScreen = ({ onBack }) => {
         Papa.parse(text, {
             header: true,
             skipEmptyLines: true,
+            delimiter: '|',
             complete: function(results) {
                 const parsedQuestions = results.data.map(row => ({
                     question: row.Question || row.question || '',
@@ -373,7 +375,7 @@ const KnowledgeTestScreen = ({ onBack }) => {
                         <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg mb-6">
                             <p className="font-semibold text-indigo-800 mb-2">Instructions:</p>
                             <p className="text-sm text-indigo-700">The input data requires specific column headers: Question, CorrectAnswer, OptionA, OptionB, OptionC, OptionD.</p>
-                            <p className="text-sm text-indigo-700">Please upload a .csv file or copy-paste the data below.</p>
+                            <p className="text-sm text-indigo-700">Please upload a .csv file or copy-paste the data below. NOTE: Use the Pipe symbol (|) as the column separator to avoid issues with commas in questions.</p>
                         </div>
                         
                         {/* Timer Input */}
@@ -403,7 +405,7 @@ const KnowledgeTestScreen = ({ onBack }) => {
 
                         {/* Paste Area */}
                         <div className="mb-6">
-                            <label htmlFor="pasteArea" className="block text-sm font-medium text-slate-700 mb-1">Or Copy-Paste CSV data here:</label>
+                            <label htmlFor="pasteArea" className="block text-sm font-medium text-slate-700 mb-1">Or Paste your data here using the pipe:</label>
                             <textarea
                                 id="pasteArea"
                                 rows="5"
@@ -428,19 +430,19 @@ const KnowledgeTestScreen = ({ onBack }) => {
                          <div style={{ height: 100 }}></div> 
 
                         <div className="p-4 bg-yellow-50 border border-black-200 rounded-lg mb-6">
-                            <p className="font-semibold text-black-800 mb-2">Try with this!</p>
-                            <p className="text-sm text-black-700">Question,CorrectAnswer,OptionA,OptionB,OptionC,OptionD</p>
-                            <p className="text-sm text-black-700">What is the primary difference between correlation and causation?,Causation implies correlation,Correlation implies causation,Causation implies correlation,They mean the same thing,Correlation is measured in time series</p>
-                            <p className="text-sm text-black-700">In SQL, which join returns only the rows that have matching values in both tables?,INNER JOIN,LEFT JOIN,OUTER JOIN,FULL JOIN,INNER JOIN</p>
-                            <p className="text-sm text-black-700">What is P-value in hypothesis testing?,The probability of observing the data given the null hypothesis is true,The probability of the null hypothesis being true,The confidence level of the test,The minimum acceptable significance level,The probability of observing the data given the null hypothesis is true</p>
-                            <p className="text-sm text-black-700">Which technique is used to reduce the dimensionality of a dataset while preserving its variance?,Principal Component Analysis (PCA),Linear Regression,K-Means Clustering,ANOVA,Principal Component Analysis (PCA)</p>
-                            <p className="text-sm text-black-700">What is the main purpose of A/B testing?,To compare two versions (A and B) of a variable to determine which performs better,To perform multivariate regression,To analyze unstructured data,To calculate the average of two samples,To compare two versions (A and B) of a variable to determine which performs better</p>
-                            <p className="text-sm text-black-700">What is data normalization primarily used for?,Scaling data into a common range,Filtering out null values,Converting text data to numeric format,Performing feature engineering,Scaling data into a common range</p>
-                            <p className="text-sm text-black-700">In statistics, what does the term 'Outlier' refer to?,A data point significantly distant from other observations,The mean value of the dataset,The data point that occurs most frequently,The central tendency of the data,A data point significantly distant from other observations</p>
-                            <p className="text-sm text-black-700">Which chart type is best for visualizing the distribution of a single numerical variable?,Histogram,Scatter Plot,Line Chart,Bar Chart,Histogram</p>
-                            <p className="text-sm text-black-700">What is the risk of having a very high R-squared value in a regression model?,Overfitting the model to the training data,Underfitting the model to the training data,Low bias,High variance,Overfitting the model to the training data</p>
-                            <p className="text-sm text-black-700">What is the most effective way to handle missing values (NaN) in a column with high cardinality (many unique values)?,Imputation using the Mode,Deleting the column,Imputation using the Mean,One-Hot Encoding,Imputation using the Mode</p>
-
+                        
+                        <p className="font-semibold text-black-800 mb-2">Try with this Pipe-Separated format!</p>
+                        <p className="text-sm text-black-700">Question|CorrectAnswer|OptionA|OptionB|OptionC|OptionD</p>
+                        <p className="text-sm text-black-700">What is the primary difference between correlation and causation?|Causation implies correlation|Correlation implies causation|Causation implies correlation|They mean the same thing|Correlation is measured in time series</p>
+                        <p className="text-sm text-black-700">In SQL, which join returns only the rows that have matching values in both tables?|INNER JOIN|LEFT JOIN|OUTER JOIN|FULL JOIN|INNER JOIN</p>
+                        <p className="text-sm text-black-700">What is P-value in hypothesis testing?|The probability of observing the data given the null hypothesis is true|The probability of the null hypothesis being true|The confidence level of the test|The minimum acceptable significance level|The probability of observing the data given the null hypothesis is true</p>
+                        <p className="text-sm text-black-700">Which technique is used to reduce the dimensionality of a dataset while preserving its variance?|Principal Component Analysis (PCA)|Linear Regression|K-Means Clustering|ANOVA|Principal Component Analysis (PCA)</p>
+                        <p className="text-sm text-black-700">What is the main purpose of A/B testing?|To compare two versions (A and B) of a variable to determine which performs better|To perform multivariate regression|To analyze unstructured data|To calculate the average of two samples|To compare two versions (A and B) of a variable to determine which performs better</p>
+                        <p className="text-sm text-black-700">What is data normalization primarily used for?|Scaling data into a common range|Filtering out null values|Converting text data to numeric format|Performing feature engineering|Scaling data into a common range</p>
+                        <p className="text-sm text-black-700">In statistics, what does the term 'Outlier' refer to?|A data point significantly distant from other observations|The mean value of the dataset|The data point that occurs most frequently|The central tendency of the data|A data point significantly distant from other observations</p>
+                        <p className="text-sm text-black-700">Which chart type is best for visualizing the distribution of a single numerical variable?|Histogram|Scatter Plot|Line Chart|Bar Chart|Histogram</p>
+                        <p className="text-sm text-black-700">What is the risk of having a very high R-squared value in a regression model?|Overfitting the model to the training data|Underfitting the model to the training data|Low bias|High variance|Overfitting the model to the training data</p>
+                        <p className="text-sm text-black-700">What is the most effective way to handle missing values (NaN) in a column with high cardinality (many unique values)?|Imputation using the Mode|Deleting the column|Imputation using the Mean|One-Hot Encoding|Imputation using the Mode</p>
                         </div>
 
                         <div style={{ height: 100 }}></div> 
