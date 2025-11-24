@@ -450,13 +450,14 @@ const KnowledgeTestScreen = ({ onBack }) => {
                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
                             <p className="font-semibold text-black-800 mb-2">Prompt</p>
                             <p>Act as an expert quiz creator. Generate exactly 10 multiple-choice questions suitable for a interview quiz on the topic of Data Analysis Interview Concepts.</p> 
-                            <p>The output MUST be a single block of text formatted strictly as a CSV (Comma-Separated Values).</p> 
-                            <p>The CSV output MUST contain the exact following header row and column order:</p> 
-                            <p>Question, CorrectAnswer, OptionA, OptionB, OptionC, OptionD</p> 
+                            <p>The output MUST be a single block of text formatted strictly using the Pipe symbol (|) as the separator.</p> 
+                            <p>The output MUST contain the exact following header row and column order:</p> 
+                            <p>Question|CorrectAnswer|OptionA|OptionB|OptionC|OptionD</p> 
                             <p>Ensure that:</p>
-                             <p>1. The answer given in the 'CorrectAnswer' column matches one of the options (OptionA, OptionB, OptionC, or OptionD).</p> 
-                             <p>2. All fields (Question, Answer, Options) are concise and accurate.</p> <p>Example Row Format:</p>
-                            <p>What is the process of generating synthetic data to protect user privacy?,Data Anonymization,Data Augmentation,Data Imputation,Data Anonymization,Data Segmentation</p>
+                            <p>1. The answer given in the 'CorrectAnswer' column matches one of the options (OptionA, OptionB, OptionC, or OptionD).</p> 
+                            <p>2. All fields (Question, Answer, Options) are concise and accurate.</p> 
+                            <p>Example Row Format:</p>
+                            <p>What is the process of generating synthetic data to protect user privacy?|Data Anonymization|Data Augmentation|Data Imputation|Data Anonymization|Data Segmentation</p>
                         </div>
                     </section>
                 )}
