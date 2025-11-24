@@ -2,16 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * ============================================
+ * TaskMaster App - Violet & Cyan Theme Styles
+ * ============================================
+ */
+
+/* 1. Root Variables & Global Definitions */
+:root {
+    /* Updated Color Palette */
+    --color-primary: #7c3aed;    /* Violet 600 - Primary Action Color */
+    --color-secondary: #06b6d4;  /* Cyan 500 - Secondary/Highlight Color */
+    --color-background: #f8fafc; /* Slate 50 - Light Background */
+    --color-text-dark: #1e293b;  /* Slate 800 - Main Text Color */
+    --color-card-bg: #ffffff;
+    --color-danger: #ef4444;     /* Red 500 */
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: var(--color-text-dark); /* Apply theme text color globally */
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* 2. Accessibility & Focus State - Uses Primary Color */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* 3. Custom Scrollbar Styling (For Activity Feed) */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9; /* Slate 100 */
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* Slate 300 */
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* Slate 400 */
+}
+
+/* 4. Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInFromBottom {
+    from { transform: translateY(16px); }
+    to { transform: translateY(0); }
+}
+
+.animate-in {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* ease-in-out */
+}
+
+.fade-in {
+    animation-name: fadeIn;
+}
+
+.slide-in-from-bottom-4 {
+    animation-name: slideInFromBottom;
+}
+
+/* 5. Dashboard Specific Tweaks */
+
+/* Timeline Dot Animation - Uses Violet 600 (Primary Color) */
+.timeline-dot {
+    animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+    }
+}
+
+/* Specific styling for the Log Feed Timeline */
+.group-last:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 1px;
+    height: 0;
+    background: transparent;
+}
+
+/* 6. Recharts Tooltip Customization */
+.recharts-tooltip-wrapper {
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
+}
+
+.recharts-tooltip-label {
+    font-weight: 700;
+    color: #334155; /* Slate 700 */
 }

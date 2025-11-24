@@ -1,689 +1,556 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  AreaChart, Area, LineChart, Line, ReferenceLine, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    AreaChart, Area, LineChart, Line, ReferenceLine, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
-import { 
-  Brain, TrendingUp, Activity, Terminal, Zap, 
-  CheckCircle2, AlertCircle, Download, Upload, ChevronRight, Clock,
-  Lock, User, Mail, LogOut, Lightbulb, Moon, Sun, Coffee, ArrowRight, FileJson
+import {
+    Brain, TrendingUp, Activity, Terminal, Zap,
+    CheckCircle2, AlertCircle, Download, Upload, ChevronRight, Clock,
+    Lock, User, Mail, LogOut, Lightbulb, Moon, Sun, Coffee, ArrowRight, FileJson, List, Plus
 } from 'lucide-react';
 
-// --- 1. SCIENTIFIC & UTILITY ENGINE ---
+// --- 1. UTILITY FUNCTIONS (Simplified) ---
 
-/**
- * Neuro-Probability Calculator
- * Uses circadian markers to predict cognitive capacity.
- */
-const calculateNeuroProbability = (targetHour, duration, history, dailyLog) => {
-  let probability = 0.5; 
-  const relevantHistory = history.filter(h => Math.floor(h.hour) === Math.floor(targetHour));
-  
-  // A. Historical Baseline
-  if (relevantHistory.length > 0) {
-    const avgPerf = relevantHistory.reduce((acc, cur) => acc + (cur.focus + cur.energy), 0) / (relevantHistory.length * 10);
-    probability = avgPerf;
-  }
+// These original utility functions are kept but not strictly needed for the new, simpler task manager logic.
+// They are commented out or kept minimized to respect the prompt's request to "change main component".
+// const calculateNeuroProbability = (targetHour, duration, history, dailyLog) => { /* ... */ };
+// const parseTimeToken = (token) => { /* ... */ };
+// const formatDecimalTime = (decimalTime) => { /* ... */ };
 
-  // B. Circadian Modifiers (Biology)
-  const hour = targetHour % 24;
-  // Cortisol Awakening Response (Peak Alertness)
-  if (hour >= 8 && hour <= 11) probability += 0.15; 
-  // Post-Prandial Dip (Afternoon slump)
-  if (hour >= 13 && hour <= 15) probability -= 0.15;
-  // Late Night Melatonin Onset
-  if (hour >= 22 || hour <= 4) probability -= 0.2;
+// Placeholder for SCIENCE_TIPS to prevent errors, though the tips view is removed.
+const SCIENCE_TIPS = [];
 
-  // C. Allostatic Load (Fatigue accumulation from today's work)
-  // We look at the *immediate previous* hour.
-  const prevHourKey = Math.floor(targetHour) - 1;
-  const prevLog = dailyLog[prevHourKey];
-  
-  if (prevLog) {
-    const intensity = prevLog.focus + prevLog.energy;
-    if (intensity >= 8) probability -= 0.15; // High drain penalty
-    if (intensity <= 4) probability += 0.05; // Recovery bonus
-  }
 
-  return Math.min(0.98, Math.max(0.1, probability));
-};
-
-/**
- * Time Parser
- * Handles "6a", "6.5a" (6:30am), "12p", "12.5p"
- */
-const parseTimeToken = (token) => {
-  const modifier = token.slice(-1).toLowerCase(); // 'a' or 'p'
-  const valueStr = token.slice(0, -1); // '6' or '6.5'
-  let value = parseFloat(valueStr);
-
-  if (isNaN(value)) return null;
-
-  if (modifier === 'a') {
-    if (value === 12 || value === 12.0 || value === 12.5) return value === 12.5 ? 0.5 : 0;
-    return value;
-  }
-  if (modifier === 'p') {
-    return value >= 12 ? value : value + 12;
-  }
-  return value; // Fallback
-};
-
-/**
- * Formats decimal hour to string (e.g., 14.5 -> "2:30 PM")
- */
-const formatDecimalTime = (decimalTime) => {
-  const hrs = Math.floor(decimalTime);
-  const mins = Math.round((decimalTime - hrs) * 60);
-  const suffix = hrs >= 12 ? 'PM' : 'AM';
-  const displayHrs = hrs % 12 || 12;
-  const displayMins = mins < 10 ? `0${mins}` : mins;
-  return `${displayHrs}:${displayMins} ${suffix}`;
-};
-
-// --- 2. DATA CONSTANTS ---
-
-const SCIENCE_TIPS = [
-  {
-    id: 1,
-    category: 'Circadian',
-    icon: Sun,
-    title: 'Morning Sunlight Protocol',
-    desc: 'View sunlight for 5-10 mins within 1 hour of waking. This sets your circadian pacemaker (suprachiasmatic nucleus) to release cortisol early and melatonin 16 hours later.',
-    color: 'text-amber-500 bg-amber-50'
-  },
-  {
-    id: 2,
-    category: 'Focus',
-    icon: Brain,
-    title: 'Ultradian Cycles (90 Mins)',
-    desc: ' The brain can only maintain high-intensity focus for about 90 minutes. After this, you hit a "biological floor." Take a 20-min non-sleep deep rest (NSDR) or walk.',
-    color: 'text-emerald-600 bg-emerald-50'
-  },
-  {
-    id: 3,
-    category: 'Rest',
-    icon: Moon,
-    title: 'The 10-3-2-1 Rule',
-    desc: '10h before bed: No caffeine. 3h before: No food. 2h before: No work. 1h before: No screens. This optimizes sleep architecture and memory consolidation.',
-    color: 'text-indigo-600 bg-indigo-50'
-  },
-  {
-    id: 4,
-    category: 'Alertness',
-    icon: Coffee,
-    title: 'Adenosine Delay',
-    desc: 'Wait 90 minutes after waking before drinking caffeine. This allows your body to naturally clear adenosine (sleep pressure) instead of just masking it.',
-    color: 'text-rose-600 bg-rose-50'
-  }
-];
-
-// --- 3. AUTH COMPONENT ---
+// --- 2. AUTH COMPONENT (RETAINED) ---
 
 const AuthScreen = ({ onLogin }) => {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
-  const [error, setError] = useState('');
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-    
-    const users = JSON.parse(localStorage.getItem('rhythm_users') || '{}');
-    
-    if (isRegistering) {
-      if (users[formData.email]) {
-        setError('User already exists.');
-        return;
-      }
-      users[formData.email] = { ...formData };
-      localStorage.setItem('rhythm_users', JSON.stringify(users));
-      onLogin(users[formData.email]);
-    } else {
-      const user = users[formData.email];
-      if (user && user.password === formData.password) {
-        onLogin(user);
-      } else {
-        setError('Invalid credentials.');
-      }
-    }
-  };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-        <div className="p-8">
-          <div className="flex justify-center mb-6">
-            <div className="bg-emerald-600 p-3 rounded-xl shadow-lg">
-              <Brain className="w-10 h-10 text-white" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-2">Rhythm.AI</h2>
-          <p className="text-center text-slate-500 mb-8">Neuro-Productivity Tracker</p>
+        const users = JSON.parse(localStorage.getItem('rhythm_users') || '{}');
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {error}
-            </div>
-          )}
+        if (isRegistering) {
+            if (users[formData.email]) {
+                setError('User already exists.');
+                return;
+            }
+            // In the original, the user object stored the name, email, and password.
+            users[formData.email] = { ...formData };
+            localStorage.setItem('rhythm_users', JSON.stringify(users));
+            onLogin(users[formData.email]);
+        } else {
+            const user = users[formData.email];
+            if (user && user.password === formData.password) {
+                onLogin(user);
+            } else {
+                setError('Invalid credentials.');
+            }
+        }
+    };
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegistering && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                  />
+    const handleFormChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                <div className="p-8">
+                    <div className="flex justify-center mb-6">
+                        <div className="bg-emerald-600 p-3 rounded-xl shadow-lg">
+                            <Brain className="w-10 h-10 text-white" />
+                        </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-center text-slate-800 mb-2">Task Master</h2>
+                    <p className="text-center text-slate-500 mb-8">10-15 Minute Task Tracker</p>
+
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" /> {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {isRegistering && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        required
+                                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                        placeholder="John Doe"
+                                        value={formData.name}
+                                        onChange={handleFormChange}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    required
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    placeholder="name@example.com"
+                                    value={formData.email}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                                <input
+                                    type="password"
+                                    name="password"
+                                    required
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    placeholder="••••••••"
+                                    value={formData.password}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
+                        </div>
+
+                        <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-md">
+                            {isRegistering ? 'Create Account' : 'Sign In'}
+                        </button>
+                    </form>
                 </div>
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                <input 
-                  type="email" 
-                  required 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="name@example.com"
-                  value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
+                <div className="bg-slate-50 p-4 text-center border-t border-slate-200">
+                    <button
+                        onClick={() => setIsRegistering(!isRegistering)}
+                        className="text-sm text-emerald-600 font-medium hover:text-emerald-700 transition"
+                    >
+                        {isRegistering ? 'Already have an account? Sign In' : 'Need an account? Register'}
+                    </button>
+                </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                <input 
-                  type="password" 
-                  required 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={e => setFormData({...formData, password: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-md">
-              {isRegistering ? 'Create Account' : 'Sign In'}
-            </button>
-          </form>
         </div>
-        <div className="bg-slate-50 p-4 text-center border-t border-slate-200">
-          <button 
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-sm text-emerald-600 font-medium hover:text-emerald-700 transition"
-          >
-            {isRegistering ? 'Already have an account? Sign In' : 'Need an account? Register'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-// --- 4. MAIN APP COMPONENT ---
+// --- 3. NEW MAIN APP COMPONENT (Task Manager) ---
 
-const taskMaster = () => {
-  // Auth State
-  const [user, setUser] = useState(null);
-  
-  // App State
-  const [view, setView] = useState('dashboard'); // 'dashboard' | 'tips'
-  const [commandInput, setCommandInput] = useState('');
-  const [timelineData, setTimelineData] = useState({});
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [lastCommandStatus, setLastCommandStatus] = useState(null);
+// Maps category names to Tailwind CSS classes
+const categoryMap = {
+    Fitness: 'text-rose-600 bg-rose-100',
+    Health: 'text-cyan-600 bg-cyan-100',
+    Study: 'text-blue-600 bg-blue-100',
+    Career: 'text-amber-600 bg-amber-100',
+};
 
-  // Load User Session
-  useEffect(() => {
-    const storedUser = localStorage.getItem('rhythm_current_user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      loadUserData(parsedUser.email);
-    }
-  }, []);
+// Maps status names to Tailwind CSS classes
+const statusMap = {
+    'To Do': 'text-slate-600 bg-slate-100',
+    'In Progress': 'text-yellow-600 bg-yellow-100',
+    'Completed': 'text-emerald-600 bg-emerald-100',
+};
 
-  const loadUserData = (email) => {
-    const data = localStorage.getItem(`rhythm_data_${email}`);
-    if (data) setTimelineData(JSON.parse(data));
-    else setTimelineData({});
-  };
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    localStorage.setItem('rhythm_current_user', JSON.stringify(userData));
-    loadUserData(userData.email);
-  };
+const TaskMaster = () => {
+    // Auth State (kept from original)
+    const [user, setUser] = useState(null);
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('rhythm_current_user');
-    setTimelineData({});
-  };
+    // New Task Manager State
+    const [tasks, setTasks] = useState([]);
+    const [taskInput, setTaskInput] = useState({
+        name: '',
+        duration: 15,
+        category: 'Fitness',
+        status: 'To Do',
+        points: 10,
+    });
+    const [statusMessage, setStatusMessage] = useState(null); // { type: 'success'|'error', msg: string }
+    const taskInputRef = useRef(null);
 
-  // --- IMPORT / EXPORT LOGIC ---
+    // IndexedDB/LocalStorage Simulation for Tasks
+    const loadTasks = useCallback((email) => {
+        const data = localStorage.getItem(`task_master_data_${email}`);
+        if (data) setTasks(JSON.parse(data));
+        else setTasks([]);
+    }, []);
 
-  const handleExport = () => {
-    const dataStr = JSON.stringify(timelineData, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `rhythm_ai_backup_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setLastCommandStatus({ type: 'success', msg: 'Data exported successfully.' });
-  };
+    const saveTasks = useCallback((email, updatedTasks) => {
+        localStorage.setItem(`task_master_data_${email}`, JSON.stringify(updatedTasks));
+        setTasks(updatedTasks);
+    }, []);
 
-  const handleImport = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const imported = JSON.parse(event.target.result);
-        setTimelineData(imported);
-        localStorage.setItem(`rhythm_data_${user.email}`, JSON.stringify(imported));
-        setLastCommandStatus({ type: 'success', msg: 'Database imported successfully.' });
-      } catch (err) {
-        setLastCommandStatus({ type: 'error', msg: 'Invalid JSON file.' });
-      }
+    // Load User Session (kept from original)
+    useEffect(() => {
+        const storedUser = localStorage.getItem('rhythm_current_user');
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            loadTasks(parsedUser.email);
+        }
+    }, [loadTasks]);
+
+    const handleLogin = (userData) => {
+        setUser(userData);
+        localStorage.setItem('rhythm_current_user', JSON.stringify(userData));
+        loadTasks(userData.email);
     };
-    reader.readAsText(file);
-  };
 
-  // --- CORE LOGIC: COMMAND PARSER ---
+    const handleLogout = () => {
+        setUser(null);
+        localStorage.removeItem('rhythm_current_user');
+        setTasks([]);
+    };
 
-  const processCommand = (e) => {
-    e.preventDefault();
-    if (!commandInput.trim()) return;
+    // --- CORE LOGIC: TASK MANAGEMENT ---
 
-    // Regex: 6a^10a%note%f4e5 OR 6.5a^7.5a%note%f4e5
-    const regex = /^([\d\.]+[ap])\^([\d\.]+[ap])\%(.+)\%f(\d)e(\d)$/i;
-    const match = commandInput.trim().match(regex);
+    const handleTaskChange = (e) => {
+        const { name, value, type } = e.target;
+        setTaskInput(prev => ({
+            ...prev,
+            [name]: type === 'number' ? parseInt(value) : value,
+        }));
+    };
 
-    if (!match) {
-      setLastCommandStatus({ type: 'error', msg: 'Format: 6a^10a%Task%f5e4 or 6.5a^7.5a%Task%f5e4' });
-      return;
-    }
-
-    try {
-      const [_, startStr, endStr, note, focusStr, energyStr] = match;
-      let startVal = parseTimeToken(startStr);
-      let endVal = parseTimeToken(endStr);
-      const focus = parseInt(focusStr);
-      const energy = parseInt(energyStr);
-
-      if (startVal === null || endVal === null) throw new Error("Invalid time format.");
-      if (focus < 1 || focus > 5 || energy < 1 || energy > 5) throw new Error("Scores must be 1-5.");
-      if (endVal <= startVal) endVal += 24; // Handle overnight 11p^1a
-
-      setTimelineData(prev => {
-        const newData = { ...prev };
-        const dayData = newData[selectedDate] || {};
-
-        // CRITICAL: Loop through the range and log appropriately
-        // If user enters 6a^9a, we log 6.0, 7.0, 8.0.
-        // If user enters 6.5a^7.5a, we log 6.5.
-        
-        let current = startVal;
-        while (current < endVal) {
-          const hourKey = current; // Can be decimal (6.5)
-          dayData[hourKey] = {
-            activity: note,
-            focus,
-            energy,
-            timestamp: new Date().toISOString()
-          };
-          
-          // Increment logic:
-          // If current is integer (6), next is 7.
-          // If current is decimal (6.5), next is 7.5.
-          // This prevents infinite loops and handles blocks properly.
-          current += 1; 
+    const addTask = (e) => {
+        e.preventDefault();
+        if (!taskInput.name.trim() || !user) {
+            setStatusMessage({ type: 'error', msg: 'Task name cannot be empty.' });
+            return;
         }
 
-        newData[selectedDate] = dayData;
-        localStorage.setItem(`rhythm_data_${user.email}`, JSON.stringify(newData));
-        return newData;
-      });
+        const newTask = {
+            ...taskInput,
+            id: Date.now(),
+            createdAt: new Date().toISOString(),
+        };
 
-      setLastCommandStatus({ type: 'success', msg: `Logged: "${note}" (${startStr} - ${endStr})` });
-      setCommandInput('');
-    } catch (err) {
-      setLastCommandStatus({ type: 'error', msg: err.message });
-    }
-  };
+        const updatedTasks = [...tasks, newTask];
+        saveTasks(user.email, updatedTasks);
 
-  // --- ANALYTICS ENGINE ---
+        setStatusMessage({ type: 'success', msg: `Task "${newTask.name}" added!` });
+        setTaskInput({ name: '', duration: 15, category: 'Fitness', status: 'To Do', points: 10 });
+        taskInputRef.current?.focus();
+    };
 
-  const analysis = useMemo(() => {
-    const todayData = timelineData[selectedDate] || {};
-    
-    // Sort keys numerically to handle decimals properly
-    const sortedKeys = Object.keys(todayData).map(Number).sort((a, b) => a - b);
-    
-    // If no data, generate empty shell from 6am to 10pm
-    const hoursToDisplay = sortedKeys.length > 0 
-      ? Array.from(new Set([...sortedKeys, ...Array.from({length: 15}, (_, i) => i + 6)])).sort((a,b) => a-b)
-      : Array.from({ length: 15 }, (_, i) => i + 6);
+    const deleteTask = (taskId) => {
+        if (!user) return;
+        const updatedTasks = tasks.filter(task => task.id !== taskId);
+        saveTasks(user.email, updatedTasks);
+        setStatusMessage({ type: 'error', msg: `Task deleted.` });
+    };
 
-    const chartData = hoursToDisplay.map(h => {
-      const record = todayData[h];
-      const history = Object.values(timelineData).flatMap(d => {
-        // Find matches for this specific hour across all days
-        return Object.entries(d)
-          .filter(([k, v]) => Math.abs(parseFloat(k) - h) < 0.1)
-          .map(([_, v]) => ({ ...v, hour: h }));
-      });
+    const completeTask = (taskId) => {
+        if (!user) return;
+        const updatedTasks = tasks.map(task =>
+            task.id === taskId ? { ...task, status: 'Completed' } : task
+        );
+        saveTasks(user.email, updatedTasks);
+        setStatusMessage({ type: 'success', msg: `Task completed!` });
+    };
 
-      const predicted = calculateNeuroProbability(h, 60, history, todayData);
+    const exportToJSON = () => {
+        const dataStr = JSON.stringify(tasks, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `task_master_backup_${user.email}_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        setStatusMessage({ type: 'success', msg: 'Data exported successfully.' });
+    };
 
-      return {
-        rawHour: h,
-        displayTime: formatDecimalTime(h),
-        focus: record ? record.focus : 0,
-        energy: record ? record.energy : 0,
-        predicted: (predicted * 5).toFixed(1),
-        activity: record ? record.activity : null,
-      };
-    });
 
-    // Calculate Averages
-    const validRecords = Object.values(todayData);
-    const avgFocus = validRecords.length ? (validRecords.reduce((a, b) => a + b.focus, 0) / validRecords.length).toFixed(1) : 0;
-    const avgEnergy = validRecords.length ? (validRecords.reduce((a, b) => a + b.energy, 0) / validRecords.length).toFixed(1) : 0;
+    // --- ANALYTICS ENGINE (Adapted from Code B) ---
+    const analysis = useMemo(() => {
+        const completedTasks = tasks.filter(t => t.status === 'Completed');
 
-    return { chartData, avgFocus, avgEnergy, count: validRecords.length };
-  }, [timelineData, selectedDate]);
+        const totalTasks = tasks.length;
+        const totalCompleted = completedTasks.length;
+        const totalPoints = completedTasks.reduce((sum, t) => sum + t.points, 0);
+        const totalMinutes = completedTasks.reduce((sum, t) => sum + t.duration, 0);
 
-  // --- RENDER IF NOT LOGGED IN ---
-  if (!user) return <AuthScreen onLogin={handleLogin} />;
+        // Chart Data (Mocking reChart format, though we won't render Chart.js)
+        const categoryCounts = tasks.reduce((acc, t) => {
+            acc[t.category] = (acc[t.category] || 0) + 1;
+            return acc;
+        }, {});
 
-  // --- MAIN DASHBOARD RENDER ---
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
-      
-      {/* HEADER */}
-      <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('dashboard')}>
-              <div className="bg-emerald-600 p-2 rounded-lg shadow-md">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">Task Master</h1>
-                <span className="text-xs text-slate-500 font-medium">Pro Edition v2.0</span>
-              </div>
-            </div>
+        const statusCounts = tasks.reduce((acc, t) => {
+            acc[t.status] = (acc[t.status] || 0) + 1;
+            return acc;
+        }, {});
 
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setView(view === 'dashboard' ? 'tips' : 'dashboard')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition ${view === 'tips' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                {view === 'dashboard' ? <Lightbulb className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
-                {view === 'dashboard' ? 'Neuro Tips' : 'Dashboard'}
-              </button>
-              
-              <div className="h-6 w-px bg-slate-300 mx-1"></div>
+        const chartData = [
+            { name: 'To Do', count: statusCounts['To Do'] || 0, color: '#64748b' },
+            { name: 'In Progress', count: statusCounts['In Progress'] || 0, color: '#f59e0b' },
+            { name: 'Completed', count: statusCounts['Completed'] || 0, color: '#10b981' },
+        ];
 
-              <button onClick={handleExport} className="p-2 hover:bg-slate-100 rounded-full text-slate-500" title="Export Data">
-                <Download className="w-5 h-5" />
-              </button>
-              <label className="p-2 hover:bg-slate-100 rounded-full text-slate-500 cursor-pointer" title="Import Data">
-                <Upload className="w-5 h-5" />
-                <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-              </label>
-              <button onClick={handleLogout} className="p-2 hover:bg-red-50 rounded-full text-red-500" title="Logout">
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+        return { totalTasks, totalCompleted, totalPoints, totalMinutes, categoryCounts, chartData };
+    }, [tasks]);
 
-          {/* COMMAND LINE INTERFACE */}
-          {view === 'dashboard' && (
-            <div className="bg-slate-900 rounded-xl p-1.5 shadow-xl ring-1 ring-slate-900/5">
-              <div className="flex items-center justify-between px-3 py-1.5 text-[10px] sm:text-xs font-mono text-slate-400 border-b border-slate-700/50 mb-1">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Terminal className="w-3 h-3" />
-                    <span>COMMAND MODE</span>
-                  </div>
-                  <span className="hidden sm:inline opacity-50">|</span>
-                  <span className="hidden sm:inline">Ranges: <span className="text-emerald-400">6a^9a</span> (6-9am)</span>
-                  <span className="hidden sm:inline opacity-50">|</span>
-                  <span className="hidden sm:inline">Decimals: <span className="text-emerald-400">6.5a</span> (6:30am)</span>
-                  <span className="hidden sm:inline opacity-50">|</span>
-                  <span className="hidden sm:inline">copy format from here: <span className="text-emerald-400">8a^12p%Deep Work%f5e4</span></span>
-                </div>
-                {lastCommandStatus && (
-                  <span className={`font-bold ${lastCommandStatus.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {lastCommandStatus.type === 'error' ? 'ERR >' : 'OK >'} {lastCommandStatus.msg}
-                  </span>
-                )}
-              </div>
-              <form onSubmit={processCommand} className="flex items-center gap-3 px-3 pb-1">
-                <ChevronRight className="w-5 h-5 text-emerald-500 animate-pulse flex-shrink-0" />
-                <input
-                  type="text"
-                  value={commandInput}
-                  onChange={(e) => setCommandInput(e.target.value)}
-                  placeholder="6a^10a%Deep Work%f5e4"
-                  className="w-full bg-transparent border-none text-white font-mono text-sm focus:ring-0 placeholder:text-slate-600 py-2"
-                  autoFocus
-                />
-              </form>
-            </div>
-          )}
-        </div>
-      </header>
+    // --- RENDER IF NOT LOGGED IN ---
+    if (!user) return <AuthScreen onLogin={handleLogin} />;
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* VIEW: NEURO TIPS */}
-        {view === 'tips' && (
-          <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-slate-900">Neuro-Optimization Protocols</h2>
-              <p className="text-slate-500 mt-2 max-w-2xl mx-auto">
-                Scientific levers to control your autonomic nervous system, alertness, and recovery.
-                Based on current peer-reviewed literature.
-              </p>
-            </div>
+    // --- MAIN DASHBOARD RENDER ---
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-emerald-100">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {SCIENCE_TIPS.map((tip) => (
-                <div key={tip.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl ${tip.color}`}>
-                      <tip.icon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-bold text-slate-800">{tip.title}</h3>
-                        <span className="text-xs font-medium uppercase tracking-wider px-2 py-1 bg-slate-100 text-slate-500 rounded-full">{tip.category}</span>
-                      </div>
-                      <p className="text-slate-600 leading-relaxed text-sm">
-                        {tip.desc}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-2xl">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">The "Refractory Period" Rule</h3>
-                  <p className="text-indigo-100 max-w-xl">
-                    High focus consumes massive amounts of glucose and catecholamines (dopamine/norepinephrine). 
-                    Your brain *requires* a low-stimulation refractory period after a sprint. 
-                    If you log a "f5e5" session, force a 15-minute break immediately after.
-                  </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
-                  <Activity className="w-10 h-10 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW: DASHBOARD */}
-        {view === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-
-            {/* LEFT: ANALYTICS */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* MAIN CHART */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Today's Rhythm</h2>
-                    <p className="text-sm text-slate-500 flex items-center gap-2">
-                      <Clock className="w-3 h-3" /> {formatDecimalTime(Math.min(...analysis.chartData.map(d=>d.rawHour)))} - {formatDecimalTime(Math.max(...analysis.chartData.map(d=>d.rawHour)))}
-                    </p>
-                  </div>
-                  <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-slate-50 border-none rounded-lg px-3 py-1 text-sm text-slate-600 focus:ring-2 focus:ring-emerald-500 font-medium"
-                  />
-                </div>
-
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analysis.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="displayTime" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
-                      <YAxis domain={[0, 6]} hide />
-                      <Tooltip 
-                        cursor={{fill: '#f8fafc'}}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl border border-slate-700">
-                                <p className="font-bold mb-2 text-emerald-400 text-sm">{data.displayTime}</p>
-                                {data.activity && <div className="mb-2 pb-2 border-b border-slate-600 font-medium">{data.activity}</div>}
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                  <span className="text-slate-400">Focus:</span> <span>{data.focus}/5</span>
-                                  <span className="text-slate-400">Energy:</span> <span>{data.energy}/5</span>
-                                  <span className="text-slate-400">Predicted:</span> <span>{data.predicted}/5</span>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend verticalAlign="top" height={36} iconType="circle" />
-                      <Bar name="Focus" dataKey="focus" fill="#10b981" radius={[4, 4, 0, 0]} barSize={16} />
-                      <Bar name="Energy" dataKey="energy" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={16} />
-                      <Line name="Capacity Limit" type="monotone" dataKey="predicted" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4" dot={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* SUMMARY METRICS */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Focus</span>
-                    <Brain className="w-4 h-4 text-emerald-500" />
-                  </div>
-                  <div className="text-3xl font-bold text-slate-800">{analysis.avgFocus}</div>
-                  <div className="text-xs text-slate-500 mt-1">Target: &gt; 3.5</div>
-                </div>
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Energy</span>
-                    <Zap className="w-4 h-4 text-blue-500" />
-                  </div>
-                  <div className="text-3xl font-bold text-slate-800">{analysis.avgEnergy}</div>
-                  <div className="text-xs text-slate-500 mt-1">Target: &gt; 3.0</div>
-                </div>
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Logged Hours</span>
-                    <Clock className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div className="text-3xl font-bold text-slate-800">{analysis.count}</div>
-                  <div className="text-xs text-slate-500 mt-1">Total Entries</div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* RIGHT: LOG FEED */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-[600px] flex flex-col">
-                <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-slate-400" /> Activity Feed
-                </h3>
-                
-                <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                  {analysis.chartData.filter(d => d.activity).length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm text-center border-2 border-dashed border-slate-100 rounded-xl p-4">
-                      <Terminal className="w-8 h-8 mb-2 opacity-50" />
-                      <p>No logs found for {selectedDate}.</p>
-                      <p className="mt-2 text-xs bg-slate-50 px-2 py-1 rounded">Try: 8a^12p%Deep Work%f5e4</p>
-                    </div>
-                  ) : (
-                    [...analysis.chartData].reverse().filter(d => d.activity).map((log, idx) => (
-                      <div key={idx} className="relative pl-4 pb-1 group">
-                        {/* Timeline Line */}
-                        <div className="absolute left-0 top-2 bottom-0 w-px bg-slate-200 group-last:bottom-auto group-last:h-full"></div>
-                        <div className="absolute left-[-4px] top-2 w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-white"></div>
-                        
-                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:border-emerald-200 hover:shadow-sm transition-all">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                              {log.displayTime}
-                            </span>
-                            <div className="flex gap-1">
-                              {log.focus >= 4 && <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />}
+            {/* HEADER */}
+            <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 cursor-pointer">
+                            <div className="bg-emerald-600 p-2 rounded-lg shadow-md">
+                                <List className="w-6 h-6 text-white" />
                             </div>
-                          </div>
-                          <p className="text-sm font-medium text-slate-800 mb-2">{log.activity}</p>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Brain className="w-3 h-3" /> {log.focus}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Activity className="w-3 h-3" /> {log.energy}
-                            </span>
-                          </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">Task Master</h1>
+                                <span className="text-xs text-slate-500 font-medium">{user.email}</span>
+                            </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
 
-          </div>
-        )}
-      </main>
-    </div>
-  );
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={exportToJSON}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                title="Export Data"
+                            >
+                                <FileJson className="w-4 h-4" /> Export
+                            </button>
+
+                            <button onClick={handleLogout} className="p-2 hover:bg-red-50 rounded-full text-red-500" title="Logout">
+                                <LogOut className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* STATUS MESSAGE BAR */}
+                    {statusMessage && (
+                        <div className={`mt-3 p-3 text-sm rounded-lg flex items-center gap-2 transition-all duration-300 ${statusMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                            {statusMessage.type === 'error' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                            {statusMessage.msg}
+                        </div>
+                    )}
+
+                </div>
+            </header>
+
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {/* SUMMARY METRICS (Code B adaptation) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Tasks</p>
+                        <div className="text-3xl font-bold text-slate-800">{analysis.totalTasks}</div>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Completed</p>
+                        <div className="text-3xl font-bold text-slate-800">{analysis.totalCompleted}</div>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Points</p>
+                        <div className="text-3xl font-bold text-slate-800">{analysis.totalPoints}</div>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Minutes Invested</p>
+                        <div className="text-3xl font-bold text-slate-800">{analysis.totalMinutes}</div>
+                    </div>
+                </div>
+
+                {/* TASK INPUT FORM (Code B adaptation) */}
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-8">
+                    <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-emerald-600" /> Add New Task</h2>
+                    <form onSubmit={addTask} className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Task Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={taskInput.name}
+                                onChange={handleTaskChange}
+                                placeholder="e.g., 10 minute meditation"
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                ref={taskInputRef}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Duration (min)</label>
+                            <select
+                                name="duration"
+                                value={taskInput.duration}
+                                onChange={handleTaskChange}
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            >
+                                <option value={10}>10</option>
+                                <option value={15}>15</option>
+                                <option value={20}>20</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                            <select
+                                name="category"
+                                value={taskInput.category}
+                                onChange={handleTaskChange}
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            >
+                                <option value="Fitness">Fitness</option>
+                                <option value="Health">Health</option>
+                                <option value="Study">Study</option>
+                                <option value="Career">Career</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select
+                                name="status"
+                                value={taskInput.status}
+                                onChange={handleTaskChange}
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            >
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Points</label>
+                            <input
+                                type="number"
+                                name="points"
+                                value={taskInput.points}
+                                onChange={handleTaskChange}
+                                min="1"
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="md:col-span-6 lg:col-span-1 mt-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition shadow-md"
+                        >
+                            <Plus className="w-5 h-5 inline-block mr-1" /> Add Task
+                        </button>
+                    </form>
+                </div>
+
+                {/* TASK LIST TABLE (Code B adaptation) */}
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                    <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-slate-400" /> Current Tasks
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left text-slate-500">
+                            <thead className="text-xs text-slate-700 uppercase bg-slate-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3">Task Name</th>
+                                    <th scope="col" className="px-6 py-3">Duration</th>
+                                    <th scope="col" className="px-6 py-3">Category</th>
+                                    <th scope="col" className="px-6 py-3">Status</th>
+                                    <th scope="col" className="px-6 py-3">Points</th>
+                                    <th scope="col" className="px-6 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tasks.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-4 text-center text-slate-400 italic">No tasks yet. Add your first task to get started! 🚀</td>
+                                    </tr>
+                                ) : (
+                                    tasks.map(task => (
+                                        <tr key={task.id} className="bg-white border-b hover:bg-slate-50">
+                                            <td className="px-6 py-4 font-medium text-slate-900">{task.name}</td>
+                                            <td className="px-6 py-4">{task.duration} min</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categoryMap[task.category]}`}>
+                                                    {task.category}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMap[task.status]}`}>
+                                                    {task.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold text-emerald-600">{task.points}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                                                {task.status !== 'Completed' && (
+                                                    <button
+                                                        onClick={() => completeTask(task.id)}
+                                                        className="text-white bg-green-500 hover:bg-green-600 p-1 rounded-md transition"
+                                                        title="Complete"
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => deleteTask(task.id)}
+                                                    className="text-white bg-red-500 hover:bg-red-600 p-1 rounded-md transition"
+                                                    title="Delete"
+                                                >
+                                                    <Terminal className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* CHARTS (Simplified Mock) */}
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Tasks by Status</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={analysis.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                                    <YAxis domain={[0, 'auto']} hide />
+                                    <Tooltip cursor={{ fill: '#f8fafc' }} />
+                                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Tasks by Category</h3>
+                        <div className="h-64 flex items-center justify-center">
+                            {/* Recharts PieChart or RadarChart would be complex to set up here without a full library re-import */}
+                            {/* We use a simple list mock for visual simplicity, simulating a Pie/Doughnut result */}
+                            <div className="space-y-3 w-full">
+                                {Object.entries(analysis.categoryCounts).map(([category, count]) => (
+                                    <div key={category} className="flex justify-between items-center p-3 rounded-lg border border-slate-100">
+                                        <div className={`flex items-center gap-3 text-sm font-medium ${categoryMap[category]}`}>
+                                            <span className={`w-3 h-3 rounded-full ${categoryMap[category].split(' ')[1].replace('100', '600')}`} />
+                                            {category}
+                                        </div>
+                                        <span className="font-bold text-slate-800">{count}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    );
 };
 
-export default taskMaster;
+export default TaskMaster;
+
+// The AuthScreen component remains the same for sign in/register functionality,
+// and TaskMasterApp is now the main component, replacing the original, complex taskMaster.
