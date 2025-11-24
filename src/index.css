@@ -4,7 +4,7 @@
 
 /**
  * ============================================
- * TaskMaster App - Violet Theme Styles
+ * TaskMaster App - Violet Theme Styles (Updated for colorful professionalism)
  * ============================================
  */
 
@@ -15,12 +15,12 @@
     --color-primary-dark: #6d28d9;  /* Violet 700 - Hover states */
     --color-primary-light: #8b5cf6; /* Violet 500 - Lighter variant */
     --color-secondary: #a78bfa;     /* Violet 400 - Secondary/Highlight Color */
-    --color-background: black;    /* Violet 50 - Light Background */
+    --color-background: #f9fafb;    /* General light background (Slate 50) */
     --color-background-card: #ffffff;
     --color-text-dark: #1e1b4b;     /* Indigo 950 - Main Text Color */
     --color-text-light: #6b7280;    /* Gray 500 - Secondary text */
     --color-danger: #ef4444;        /* Red 500 */
-    --color-success: #10b981;       /* Emerald 500 */
+    --color-success: #10b981;       /* Emerald 500 (Used for status, not primary theme) */
 }
 
 body {
@@ -31,7 +31,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--color-text-dark);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* UPDATED: Using a deep, solid Indigo background to complement the Violet theme. 
+     The content area itself will use bg-indigo-50 from the JSX. */
+  background-color: #312e81; /* Indigo 900 */
 }
 
 code {
@@ -48,7 +51,7 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* 3. Custom Scrollbar Styling */
+/* 3. Custom Scrollbar Styling (Kept as is - uses light violet shades) */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -68,7 +71,7 @@ textarea:focus-visible {
     background: #a78bfa; /* Violet 400 */
 }
 
-/* 4. Animations */
+/* 4. Animations (Kept as is) */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -92,7 +95,7 @@ textarea:focus-visible {
     animation-name: slideInFromBottom;
 }
 
-/* 5. Dashboard Specific Tweaks */
+/* 5. Dashboard Specific Tweaks (Kept as is, using Primary Color for animation) */
 
 /* Timeline Dot Animation - Uses Violet 600 (Primary Color) */
 .timeline-dot {
@@ -122,7 +125,7 @@ textarea:focus-visible {
     background: transparent;
 }
 
-/* 6. Recharts Tooltip Customization */
+/* 6. Recharts Tooltip Customization (Kept as is) */
 .recharts-tooltip-wrapper {
     filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
 }
